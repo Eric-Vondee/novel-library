@@ -1,0 +1,61 @@
+{
+	"$schema": "https://biomejs.dev/schemas/1.6.2/schema.json",
+	"organizeImports": {
+		"enabled": true
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"suspicious": {
+				"noExplicitAny": "warn",
+				"noThenProperty": "off",
+				"noAssignInExpressions": "off",
+				"noPrototypeBuiltins": "off"
+			},
+			"performance": {
+				"noDelete": "off"
+			},
+			"security": {
+				"noDangerouslySetInnerHtml": "off"
+			},
+			"complexity": {
+				"useLiteralKeys": "off",
+				"noUselessFragments": "off",
+				"noStaticOnlyClass": "off"
+			},
+			"correctness": {
+				"useExhaustiveDependencies": "off",
+				"noChildrenProp": "off",
+				"noConstAssign": "error",
+				"noUnreachable": "error",
+				"useHookAtTopLevel": "error",
+				"noVoidTypeReturn": "warn"
+			},
+			"style": {
+				"noUnusedTemplateLiteral": "off",
+				"useDefaultParameterLast": "off",
+				"noVar": "error",
+				"useConst": "error"
+			}
+		}
+	},
+	"formatter": {
+		"enabled": true,
+		"formatWithErrors": false,
+		"indentStyle": "space",
+		"indentWidth": 2,
+		"lineWidth": 100,
+		"lineEnding": "lf",
+		"ignore": []
+	},
+	"javascript": {
+		"formatter": {
+			"jsxQuoteStyle": "single",
+			"quoteStyle": "single",
+			"attributePosition": "auto",
+			"bracketSameLine": true,
+			"semicolons": "asNeeded"
+		}
+	}
+}

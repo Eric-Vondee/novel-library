@@ -1,0 +1,47 @@
+html {
+  font-family: "Montserrat", system-ui, sans-serif;
+  padding: 0;
+}
+
+:root {
+  --bg-color: #ffffff;
+  --text-color: #333333;
+  --card-bg: #ffffff;
+  --card-shadow: rgba(0, 0, 0, 0.1);
+  --header-bg: rgba(255, 255, 255, 0.8);
+}
+
+body.dark {
+  --bg-color: #121212;
+  --text-color: #e0e0e0;
+  --card-bg: #242424;
+  --card-shadow: rgba(255, 255, 255, 0.1);
+  --header-bg: rgba(18, 18, 18, 0.8);
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+body {
+  padding: 0 !important;
+}
+
+p {
+  font-size: 18px; /* Default size for mobile */
+}
+
+/* Tablet size */
+@media screen and (min-width: 768px) {
+  p {
+    font-size: 22px;
+  }
+}
+
+/* Laptop size */
+@media screen and (min-width: 1024px) {
+  p {
+    font-size: 24px;
+  }
+}
