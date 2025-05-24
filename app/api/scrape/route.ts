@@ -18,7 +18,6 @@ export async function POST(request: Request) {
   let browser: Browser | undefined
   try {
     const { url } = await request.json()
-    console.log('Received scrape request for URL:', url)
 
     if (!url) {
       toast.error('URL is required')
@@ -27,10 +26,8 @@ export async function POST(request: Request) {
 
     // Remove any comment page or other parameters from the URL
     const cleanUrl = url.split('/comment-page-')[0].split('?')[0]
-    console.log('Cleaned URL:', cleanUrl)
 
     try {
-      console.log('Launching browser...')
       browser = await puppeteer.launch({
         headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'],
@@ -46,13 +43,11 @@ export async function POST(request: Request) {
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       )
 
-      console.log('Navigating to page...')
       await page.goto(cleanUrl, { waitUntil: 'networkidle0', timeout: 30000 })
 
       // Wait for the content to load
       await page.waitForSelector('.seriestitlenu, .book-info h1', { timeout: 5000 })
 
-      console.log('Getting page content...')
       const content = await page.content()
       const $ = cheerio.load(content)
 
@@ -69,7 +64,6 @@ export async function POST(request: Request) {
       }
 
       if (cleanUrl.includes('novelupdates')) {
-        console.log('Scraping NovelUpdates page')
         const title = $('.seriestitlenu').text().trim()
         const author = $('#authtag')
           .text()
@@ -84,8 +78,6 @@ export async function POST(request: Request) {
 
         const description = $('#editdescription').text().trim()
         const image = $('.seriesimg img').attr('src') || ''
-
-        console.log('Scraped data:', { title, author, status, chapters, image, description })
 
         if (!title) {
           throw new Error(
@@ -104,15 +96,12 @@ export async function POST(request: Request) {
           source: 'NovelUpdates',
         }
       } else if (cleanUrl.includes('webnovel')) {
-        console.log('Scraping Webnovel page')
         const title = $('.book-info h1').text().trim()
         const author = $('.author-name').text().trim()
         const status = $('.book-status').text().trim()
         const chapters = Number.parseInt($('.chapter-count').text().trim()) || 0
         const description = $('.book-intro').text().trim()
         const image = $('.book-cover img').attr('src') || ''
-
-        console.log('Scraped data:', { title, author, status, chapters, image })
 
         if (!title) {
           throw new Error(
@@ -138,11 +127,6 @@ export async function POST(request: Request) {
       toast.success('Successfully scraped novel data')
       return NextResponse.json(scrapedData)
     } catch (error: any) {
-      console.error('Scraping error:', {
-        message: error.message,
-        stack: error.stack,
-      })
-
       if (error.message.includes('net::ERR_ACCESS_DENIED') || error.message.includes('403')) {
         toast.error('Access denied by the website')
         return NextResponse.json(
@@ -164,12 +148,10 @@ export async function POST(request: Request) {
       )
     } finally {
       if (browser) {
-        console.log('Closing browser...')
         await browser.close()
       }
     }
   } catch (error: any) {
-    console.error('General error:', error)
     toast.error('Failed to scrape data')
     return NextResponse.json(
       {

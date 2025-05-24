@@ -3,6 +3,8 @@
 import type React from 'react'
 import { useState } from 'react'
 import { Upload, Download, BookOpen, Loader2, Plus, X } from 'lucide-react'
+import { useTheme } from 'next-themes'
+import { toast } from 'sonner'
 
 interface ScrapedData {
   title: string
@@ -23,6 +25,7 @@ interface CustomData {
 }
 
 const NovelImportTool: React.FC = () => {
+  const { theme } = useTheme()
   const [url, setUrl] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [scrapedData, setScrapedData] = useState<ScrapedData | null>(null)
@@ -36,10 +39,8 @@ const NovelImportTool: React.FC = () => {
   })
 
   const scrapeNovelData = async (novelUrl: string) => {
-    console.log('Starting to scrape novel data for URL:', novelUrl)
     setIsLoading(true)
     try {
-      console.log('Making API request to /api/scrape')
       const response = await fetch('/api/scrape', {
         method: 'POST',
         headers: {
@@ -48,14 +49,11 @@ const NovelImportTool: React.FC = () => {
         body: JSON.stringify({ url: novelUrl }),
       })
 
-      console.log('API Response status:', response.status)
       if (!response.ok) {
-        console.error('API Response not OK:', response.status, response.statusText)
         throw new Error('Failed to scrape data')
       }
 
       const data = await response.json()
-      console.log('Received scraped data:', data)
       setScrapedData(data)
       setCustomData({
         title: data.title,
@@ -65,8 +63,7 @@ const NovelImportTool: React.FC = () => {
         synopsis: data.synopsis,
       })
     } catch (error) {
-      console.error('Detailed scraping error:', error)
-      alert('Failed to scrape data. Please try again or enter the details manually.')
+      toast.error('Failed to scrape data. Please try again or enter the details manually.')
     } finally {
       setIsLoading(false)
     }
@@ -83,7 +80,7 @@ const NovelImportTool: React.FC = () => {
     if (file?.name.endsWith('.epub')) {
       setEpubFile(file)
     } else {
-      alert('Please upload a valid .epub file')
+      toast.error('Please upload a valid .epub file')
     }
   }
 
@@ -120,37 +117,29 @@ const NovelImportTool: React.FC = () => {
   }
 
   const handleSaveNovel = async () => {
-    console.log('Starting to save novel')
     const novelObject = generateNovelObject()
-    console.log('Generated novel object:', novelObject)
 
     if (!epubFile) {
-      console.log('No EPUB file selected')
-      alert('Please upload an EPUB file')
+      toast.error('Please upload an EPUB file')
       return
     }
 
     try {
-      console.log('Creating FormData with file:', epubFile.name)
       const formData = new FormData()
       formData.append('file', epubFile)
       formData.append('novelData', JSON.stringify(novelObject))
 
-      console.log('Making API request to /api/upload')
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       })
 
-      console.log('Upload API Response status:', response.status)
       if (!response.ok) {
-        console.error('Upload API Response not OK:', response.status, response.statusText)
         throw new Error('Failed to upload novel')
       }
 
-      const result = await response.json()
-      console.log('Upload successful, response:', result)
-      alert('Novel uploaded successfully!')
+      await response.json()
+      toast.success('Novel uploaded successfully!')
 
       // Reset the component
       setUrl('')
@@ -164,34 +153,33 @@ const NovelImportTool: React.FC = () => {
         synopsis: [''],
       })
     } catch (error) {
-      console.error('Detailed upload error:', error)
-      alert('Failed to upload novel. Please try again.')
+      toast.error('Failed to upload novel. Please try again.')
     }
   }
 
   return (
-    <div className='max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg'>
-      <div className='mb-8'>
-        <h1 className='text-3xl font-bold text-gray-900 mb-2'>Novel Import Tool</h1>
-        <p className='text-gray-600'>
+    <div className='max-w-4xl mx-auto p-4 sm:p-6 bg-card rounded-lg shadow-lg'>
+      <div className='mb-6 sm:mb-8'>
+        <h1 className='text-2xl sm:text-3xl font-bold text-foreground mb-2'>Novel Import Tool</h1>
+        <p className='text-muted-foreground'>
           Scrape novel data from popular sites and upload your epub files
         </p>
       </div>
 
       {/* URL Input Section */}
-      <div className='mb-8 p-6 bg-gray-50 rounded-lg'>
-        <h2 className='text-xl font-semibold mb-4 flex items-center'>
+      <div className='mb-6 sm:mb-8 p-4 sm:p-6 bg-muted/50 rounded-lg'>
+        <h2 className='text-lg sm:text-xl font-semibold mb-4 flex items-center text-foreground'>
           <Download className='mr-2' size={20} />
           Scrape Novel Data
         </h2>
-        <div className='flex gap-4'>
+        <div className='flex flex-col sm:flex-row gap-4'>
           <input
             type='url'
             id='novel-url'
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder='Enter novel URL (NovelUpdates, Webnovel, etc.)'
-            className='flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+            className='flex-1 px-4 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent bg-background text-foreground'
             disabled={isLoading}
             onKeyPress={(e) => e.key === 'Enter' && handleUrlSubmit()}
           />
@@ -199,7 +187,7 @@ const NovelImportTool: React.FC = () => {
             type='button'
             onClick={handleUrlSubmit}
             disabled={isLoading || !url.trim()}
-            className='px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center'>
+            className='px-6 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center'>
             {isLoading ? (
               <Loader2 className='animate-spin mr-2' size={16} />
             ) : (
@@ -208,14 +196,14 @@ const NovelImportTool: React.FC = () => {
             {isLoading ? 'Scraping...' : 'Scrape'}
           </button>
         </div>
-        <div className='mt-2 text-sm text-gray-500'>
-          Supported sites: NovelUpdates, Webnovel, Qidian, and more
+        <div className='mt-2 text-sm text-muted-foreground'>
+          Supported sites: NovelUpdates for now
         </div>
       </div>
 
       {/* EPUB Upload Section */}
-      <div className='mb-8 p-6 bg-gray-50 rounded-lg'>
-        <h2 className='text-xl font-semibold mb-4 flex items-center'>
+      <div className='mb-6 sm:mb-8 p-4 sm:p-6 bg-muted/50 rounded-lg'>
+        <h2 className='text-lg sm:text-xl font-semibold mb-4 flex items-center text-foreground'>
           <Upload className='mr-2' size={20} />
           Upload EPUB File
         </h2>
@@ -228,14 +216,14 @@ const NovelImportTool: React.FC = () => {
               onChange={handleEpubUpload}
               className='hidden'
             />
-            <div className='border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 cursor-pointer transition-colors'>
+            <div className='border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 sm:p-6 text-center hover:border-primary cursor-pointer transition-colors'>
               {epubFile ? (
-                <div className='flex items-center justify-center text-green-600'>
+                <div className='flex items-center justify-center text-primary'>
                   <BookOpen className='mr-2' size={20} />
-                  {epubFile.name}
+                  <span className='truncate'>{epubFile.name}</span>
                 </div>
               ) : (
-                <div className='text-gray-500'>
+                <div className='text-muted-foreground'>
                   <Upload className='mx-auto mb-2' size={24} />
                   Click to upload .epub file
                 </div>
@@ -247,12 +235,16 @@ const NovelImportTool: React.FC = () => {
 
       {/* Manual/Edit Data Section */}
       {(scrapedData || customData.title) && (
-        <div className='mb-8 p-6 bg-gray-50 rounded-lg'>
-          <h2 className='text-xl font-semibold mb-4'>Edit Novel Information</h2>
+        <div className='mb-6 sm:mb-8 p-4 sm:p-6 bg-muted/50 rounded-lg'>
+          <h2 className='text-lg sm:text-xl font-semibold mb-4 text-foreground'>
+            Edit Novel Information
+          </h2>
 
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-4 mb-4'>
+          <div className='grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4'>
             <div>
-              <label htmlFor='novel-title' className='block text-sm font-medium text-gray-700 mb-1'>
+              <label
+                htmlFor='novel-title'
+                className='block text-sm font-medium text-foreground mb-1'>
                 Title
               </label>
               <input
@@ -260,13 +252,13 @@ const NovelImportTool: React.FC = () => {
                 type='text'
                 value={customData.title}
                 onChange={(e) => setCustomData((prev) => ({ ...prev, title: e.target.value }))}
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
+                className='w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary bg-background text-foreground'
               />
             </div>
             <div>
               <label
                 htmlFor='novel-author'
-                className='block text-sm font-medium text-gray-700 mb-1'>
+                className='block text-sm font-medium text-foreground mb-1'>
                 Author
               </label>
               <input
@@ -274,20 +266,20 @@ const NovelImportTool: React.FC = () => {
                 type='text'
                 value={customData.author}
                 onChange={(e) => setCustomData((prev) => ({ ...prev, author: e.target.value }))}
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
+                className='w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary bg-background text-foreground'
               />
             </div>
             <div>
               <label
                 htmlFor='novel-status'
-                className='block text-sm font-medium text-gray-700 mb-1'>
+                className='block text-sm font-medium text-foreground mb-1'>
                 Status
               </label>
               <select
                 id='novel-status'
                 value={customData.status}
                 onChange={(e) => setCustomData((prev) => ({ ...prev, status: e.target.value }))}
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'>
+                className='w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary bg-background text-foreground'>
                 <option value='Ongoing'>Ongoing</option>
                 <option value='Completed'>Completed</option>
                 <option value='Dropped'>Dropped</option>
@@ -297,7 +289,7 @@ const NovelImportTool: React.FC = () => {
             <div>
               <label
                 htmlFor='novel-chapters'
-                className='block text-sm font-medium text-gray-700 mb-1'>
+                className='block text-sm font-medium text-foreground mb-1'>
                 Chapters
               </label>
               <input
@@ -305,7 +297,7 @@ const NovelImportTool: React.FC = () => {
                 type='number'
                 value={customData.chapters}
                 onChange={(e) => setCustomData((prev) => ({ ...prev, chapters: e.target.value }))}
-                className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
+                className='w-full px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary bg-background text-foreground'
               />
             </div>
           </div>
@@ -313,7 +305,7 @@ const NovelImportTool: React.FC = () => {
           <div className='mb-4'>
             <label
               htmlFor='synopsis-section'
-              className='block text-sm font-medium text-gray-700 mb-2'>
+              className='block text-sm font-medium text-foreground mb-2'>
               Synopsis
             </label>
             {customData.synopsis.map((line, index) => (
@@ -323,14 +315,14 @@ const NovelImportTool: React.FC = () => {
                   value={line}
                   onChange={(e) => updateSynopsisLine(index, e.target.value)}
                   placeholder='Enter synopsis paragraph...'
-                  rows={10}
-                  className='flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500'
+                  rows={4}
+                  className='flex-1 px-3 py-2 border border-input rounded-lg focus:ring-2 focus:ring-primary bg-background text-foreground'
                 />
                 {customData.synopsis.length > 1 && (
                   <button
                     type='button'
                     onClick={() => removeSynopsisLine(index)}
-                    className='px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg'>
+                    className='px-3 py-2 text-destructive hover:bg-destructive/10 rounded-lg'>
                     <X size={16} />
                   </button>
                 )}
@@ -339,7 +331,7 @@ const NovelImportTool: React.FC = () => {
             <button
               type='button'
               onClick={addSynopsisLine}
-              className='flex items-center text-blue-600 hover:text-blue-700'>
+              className='flex items-center text-primary hover:text-primary/90'>
               <Plus size={16} className='mr-1' />
               Add Synopsis Line
             </button>
@@ -349,23 +341,23 @@ const NovelImportTool: React.FC = () => {
 
       {/* Preview Section */}
       {scrapedData && (
-        <div className='mb-8 p-6 bg-blue-50 rounded-lg'>
-          <h2 className='text-xl font-semibold mb-4'>Preview</h2>
-          <div className='flex gap-4'>
+        <div className='mb-6 sm:mb-8 p-4 sm:p-6 bg-primary/5 rounded-lg'>
+          <h2 className='text-lg sm:text-xl font-semibold mb-4 text-foreground'>Preview</h2>
+          <div className='flex flex-col sm:flex-row gap-4'>
             {scrapedData.image && (
               <img
                 src={scrapedData.image}
                 alt={customData.title}
-                className='w-24 h-32 object-cover rounded-lg'
+                className='w-24 h-32 object-cover rounded-lg mx-auto sm:mx-0'
               />
             )}
-            <div className='flex-1'>
-              <h3 className='text-lg font-bold'>{customData.title}</h3>
-              <p className='text-gray-600'>by {customData.author}</p>
-              <p className='text-sm text-gray-500'>
+            <div className='flex-1 text-center sm:text-left'>
+              <h3 className='text-lg font-bold text-foreground'>{customData.title}</h3>
+              <p className='text-muted-foreground'>by {customData.author}</p>
+              <p className='text-sm text-muted-foreground'>
                 {customData.status} • {customData.chapters} chapters
               </p>
-              <p className='text-sm mt-2'>{customData.synopsis[0]}</p>
+              <p className='text-sm mt-2 text-foreground'>{customData.synopsis[0]}</p>
             </div>
           </div>
         </div>
@@ -373,11 +365,11 @@ const NovelImportTool: React.FC = () => {
 
       {/* Save Button */}
       {(scrapedData || customData.title) && (
-        <div className='flex justify-end'>
+        <div className='flex justify-center sm:justify-end'>
           <button
             type='button'
             onClick={handleSaveNovel}
-            className='px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center text-lg font-medium'>
+            className='w-full sm:w-auto px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 flex items-center justify-center text-lg font-medium'>
             <BookOpen className='mr-2' size={20} />
             Save Novel
           </button>
