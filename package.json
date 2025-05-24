@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate && npx puppeteer browsers install chrome",
-    "vercel-build": "prisma generate && next build",
+    "vercel-build": "prisma generate && npx puppeteer browsers install chrome && next build",
     "vercel-postbuild": "chmod +x ./vercel-postbuild.sh && ./vercel-postbuild.sh",
     "migrate-novels": "ts-node scripts/migrate-novels.ts",
     "migrate-to-cloudinary": "ts-node scripts/migrate-to-cloudinary.ts",
