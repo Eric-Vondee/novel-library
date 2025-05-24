@@ -28,7 +28,15 @@ export async function POST(request: Request) {
     try {
       browser = await puppeteer.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--disable-gpu',
+          '--window-size=1920x1080',
+        ],
+        executablePath: process.env.CHROME_BIN || undefined,
       })
 
       const page = await browser.newPage()
