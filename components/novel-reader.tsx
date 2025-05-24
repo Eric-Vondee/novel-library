@@ -13,6 +13,7 @@ import { ErrorBoundary } from './error-boundary'
 import { BookLoadError } from '@/lib/epub-helper'
 import { AlertCircle } from 'lucide-react'
 import { Button } from './ui/button'
+import { PrismaClient } from '@prisma/client'
 
 function ErrorFallback({ error, reset }: { error: Error; reset: () => void }) {
   return (
@@ -37,6 +38,37 @@ export default function NovelReader() {
   const { filename } = useParams()
   const filenameString = Array.isArray(filename) ? filename[0] : filename
   const { theme } = useTheme()
+  const [epubUrl, setEpubUrl] = useState<string>('')
+  const [isLoadingUrl, setIsLoadingUrl] = useState(true)
+
+  useEffect(() => {
+    async function fetchEpubUrl() {
+      try {
+        const prisma = new PrismaClient()
+        const novel = await prisma.novel.findFirst({
+          where: {
+            filename: {
+              contains: filenameString,
+            },
+          },
+        })
+        await prisma.$disconnect()
+
+        if (novel?.filename) {
+          setEpubUrl(novel.filename)
+        } else {
+          throw new Error('Novel not found')
+        }
+      } catch (error) {
+        console.error('Error fetching novel URL:', error)
+      } finally {
+        setIsLoadingUrl(false)
+      }
+    }
+
+    fetchEpubUrl()
+  }, [filenameString])
+
   const {
     location,
     toc,
@@ -90,14 +122,7 @@ export default function NovelReader() {
     }
   }, [])
 
-  const {
-    state,
-    play,
-    stop,
-    pause,
-    playOrPause,
-    // set: { pitch },
-  } = useTts({
+  const { state, play, stop, pause, playOrPause } = useTts({
     children: text || '',
     markTextAsSpoken: true,
     markBackgroundColor: '#55AD66',
@@ -105,7 +130,6 @@ export default function NovelReader() {
     lang,
     voice,
     rate,
-
     onRateChange: (newRate: number) => {
       setRate(newRate)
     },
@@ -117,12 +141,28 @@ export default function NovelReader() {
 
   const handleVoiceChange = useCallback((newVoice: SpeechSynthesisVoice) => {
     setVoice(newVoice)
-    setLang(newVoice.lang) // Update language to match the selected voice
+    setLang(newVoice.lang)
   }, [])
 
   const handleToggleTTS = useCallback(() => {
     playOrPause()
   }, [playOrPause])
+
+  if (isLoadingUrl) {
+    return <Loading />
+  }
+
+  if (!epubUrl) {
+    return (
+      <div className='fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50'>
+        <div className='text-center p-6 bg-background rounded-lg shadow-lg max-w-md'>
+          <AlertCircle className='h-12 w-12 text-destructive mx-auto mb-4' />
+          <h2 className='text-xl font-semibold mb-2'>Error Loading Book</h2>
+          <p className='text-muted-foreground mb-4'>Novel not found</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <ErrorBoundary fallback={ErrorFallback}>
@@ -130,7 +170,7 @@ export default function NovelReader() {
       <div className={`flex flex-col ${theme}`}>
         <div className='flex-grow md:container md:mx-auto max-w-7xl sm:px-6 lg:px-8 pt-8 pb-16 h-[calc(100vh - 60px)]'>
           <ReactReader
-            url={`/novels/${filenameString}`}
+            url={epubUrl}
             location={location}
             locationChanged={handleLocationChanged}
             loadingView={<Loading />}
@@ -168,10 +208,8 @@ export default function NovelReader() {
             ttsPlay={play}
             ttsPause={pause}
             ttsStop={stop}
-            // onPitchChange={handlePitchChange}
             onRateChange={handleRateChange}
             onVoiceChange={handleVoiceChange}
-            // pitch={pitch}
             rate={rate}
             voice={voice}
             voices={voices}
