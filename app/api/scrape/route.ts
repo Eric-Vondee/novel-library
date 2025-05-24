@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import puppeteer, { type Browser } from 'puppeteer'
+import puppeteerCore, { type Browser as BrowserCore } from 'puppeteer-core'
+import chromium from '@sparticuz/chromium-min'
 import * as cheerio from 'cheerio'
 
 interface ScrapedData {
@@ -14,7 +16,7 @@ interface ScrapedData {
 }
 
 export async function POST(request: Request) {
-  let browser: Browser | undefined
+  let browser: Browser | BrowserCore | undefined
   try {
     const { url } = await request.json()
 
@@ -26,18 +28,31 @@ export async function POST(request: Request) {
     const cleanUrl = url.split('/comment-page-')[0].split('?')[0]
 
     try {
-      browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
-          '--disable-gpu',
-          '--window-size=1920x1080',
-        ],
-        executablePath: process.env.CHROME_BIN || undefined,
-      })
+      if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
+        // Use puppeteer-core with @sparticuz/chromium-min in production
+        const executablePath = await chromium.executablePath(
+          'https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar',
+        )
+        browser = await puppeteerCore.launch({
+          executablePath,
+          args: chromium.args,
+          headless: chromium.headless,
+          defaultViewport: chromium.defaultViewport,
+        })
+      } else {
+        // Use regular puppeteer in development
+        browser = await puppeteer.launch({
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--disable-gpu',
+            '--window-size=1920x1080',
+          ],
+        })
+      }
 
       const page = await browser.newPage()
 
