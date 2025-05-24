@@ -1,0 +1,35 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Novel {
+  id          Int      @id @default(autoincrement())
+  title       String
+  author      String
+  filename    String
+  image       String
+  description String   @default("No description available.")
+  status      String
+  chapters    Int
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  synopsis    Synopsis[]
+
+  @@index([title])
+  @@index([author])
+}
+
+model Synopsis {
+  id        Int      @id @default(autoincrement())
+  content   String
+  orderIndex Int     @map("order_index")
+  novelId   Int      @map("novel_id")
+  novel     Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
+
+  @@index([novelId])
+}

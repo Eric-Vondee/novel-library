@@ -1,6 +1,6 @@
 export default function Footer() {
   return (
-    <footer className='bg-white dark:bg-transparent text-gray-800 dark:text-gray-200 py-6 mt-12'>
+    <footer className='bg-transparent text-gray-800 dark:text-gray-200 py-6 mt-12'>
       <div className='container mx-auto'>
         <p className='text-center text-sm md:text-base'>
           📚 &copy; {new Date().getFullYear()} by{' '}
