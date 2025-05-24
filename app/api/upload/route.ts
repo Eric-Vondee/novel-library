@@ -4,7 +4,6 @@ import { join } from 'node:path'
 import { promises as fs } from 'node:fs'
 import { PrismaClient } from '@prisma/client'
 import { CloudinaryService } from '@/lib/cloudinary'
-import { toast } from 'sonner'
 
 interface NovelData {
   title: string
@@ -30,7 +29,6 @@ export async function POST(request: Request) {
     const novelData = JSON.parse(formData.get('novelData') as string)
 
     if (!file) {
-      toast.error('No file uploaded')
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
     }
 
@@ -38,7 +36,6 @@ export async function POST(request: Request) {
     const fileSize = file.size
     if (fileSize > LOCAL_MAX_SIZE) {
       const errorMessage = `File size (${(fileSize / 1024 / 1024).toFixed(2)}MB) exceeds maximum allowed size of 20MB`
-      toast.error(errorMessage)
       return NextResponse.json({ error: errorMessage }, { status: 400 })
     }
 
@@ -98,7 +95,7 @@ export async function POST(request: Request) {
         await unlink(tempImagePath)
       } catch (error) {
         console.error('Error handling image:', error)
-        toast.error('Failed to process cover image')
+        return NextResponse.json({ error: 'Failed to process cover image' }, { status: 500 })
       }
     }
 
@@ -118,7 +115,10 @@ export async function POST(request: Request) {
         await unlink(epubPath)
       } catch (error) {
         console.error('Error uploading to Cloudinary:', error)
-        toast.error('Failed to upload to Cloudinary, keeping local file')
+        return NextResponse.json(
+          { error: 'Failed to upload to Cloudinary, keeping local file' },
+          { status: 500 },
+        )
       }
     } else {
       console.log(
@@ -155,7 +155,6 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('Upload error:', error)
-    toast.error('Failed to upload novel')
     return NextResponse.json(
       {
         error: 'Failed to upload novel',

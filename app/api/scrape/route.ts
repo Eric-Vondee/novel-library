@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import puppeteer, { type Browser } from 'puppeteer'
 import * as cheerio from 'cheerio'
-import { toast } from 'sonner'
 
 interface ScrapedData {
   title: string
@@ -20,7 +19,6 @@ export async function POST(request: Request) {
     const { url } = await request.json()
 
     if (!url) {
-      toast.error('URL is required')
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })
     }
 
@@ -43,10 +41,32 @@ export async function POST(request: Request) {
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       )
 
-      await page.goto(cleanUrl, { waitUntil: 'networkidle0', timeout: 30000 })
+      // Add request interception to log failed requests
+      page.on('requestfailed', (request) => {
+        console.log('[Scrape] Failed request:', request.url(), request.failure()?.errorText)
+      })
 
-      // Wait for the content to load
-      await page.waitForSelector('.seriestitlenu, .book-info h1', { timeout: 5000 })
+      try {
+        await page.goto(cleanUrl, {
+          waitUntil: 'networkidle0',
+          timeout: 60000, // Increased timeout to 60 seconds
+        })
+      } catch (error: any) {
+        console.log('[Scrape] Navigation error:', error.message)
+        throw error
+      }
+
+      console.log('[Scrape] Waiting for content to load...')
+      try {
+        await page.waitForSelector('.seriestitlenu, .book-info h1', {
+          timeout: 10000, // 10 seconds for selector
+        })
+      } catch (error: any) {
+        console.log('[Scrape] Selector timeout:', error.message)
+        throw new Error(
+          'Could not find novel title. The page might be taking too long to load or the structure has changed.',
+        )
+      }
 
       const content = await page.content()
       const $ = cheerio.load(content)
@@ -64,6 +84,7 @@ export async function POST(request: Request) {
       }
 
       if (cleanUrl.includes('novelupdates')) {
+        console.log('[Scrape] Processing NovelUpdates page...')
         const title = $('.seriestitlenu').text().trim()
         const author = $('#authtag')
           .text()
@@ -80,6 +101,7 @@ export async function POST(request: Request) {
         const image = $('.seriesimg img').attr('src') || ''
 
         if (!title) {
+          console.log('[Scrape] Error: Could not find title on NovelUpdates page')
           throw new Error(
             'Could not find novel title. The page structure might have changed or the URL might be incorrect.',
           )
@@ -96,6 +118,7 @@ export async function POST(request: Request) {
           source: 'NovelUpdates',
         }
       } else if (cleanUrl.includes('webnovel')) {
+        console.log('[Scrape] Processing Webnovel page...')
         const title = $('.book-info h1').text().trim()
         const author = $('.author-name').text().trim()
         const status = $('.book-status').text().trim()
@@ -104,6 +127,7 @@ export async function POST(request: Request) {
         const image = $('.book-cover img').attr('src') || ''
 
         if (!title) {
+          console.log('[Scrape] Error: Could not find title on Webnovel page')
           throw new Error(
             'Could not find novel title. The page structure might have changed or the URL might be incorrect.',
           )
@@ -120,15 +144,15 @@ export async function POST(request: Request) {
           source: 'Webnovel',
         }
       } else {
-        toast.error('Unsupported website')
+        console.log('[Scrape] Error: Unsupported website:', cleanUrl)
         return NextResponse.json({ error: 'Unsupported website' }, { status: 400 })
       }
 
-      toast.success('Successfully scraped novel data')
+      console.log('[Scrape] Successfully scraped data for:', scrapedData.title)
       return NextResponse.json(scrapedData)
     } catch (error: any) {
       if (error.message.includes('net::ERR_ACCESS_DENIED') || error.message.includes('403')) {
-        toast.error('Access denied by the website')
+        console.log('[Scrape] Error: Access denied by website:', cleanUrl)
         return NextResponse.json(
           {
             error: 'Access denied by the website. The website may be blocking automated requests.',
@@ -138,7 +162,7 @@ export async function POST(request: Request) {
         )
       }
 
-      toast.error('Failed to scrape data')
+      console.log('[Scrape] Error:', error.message)
       return NextResponse.json(
         {
           error: 'Failed to scrape data',
@@ -152,7 +176,7 @@ export async function POST(request: Request) {
       }
     }
   } catch (error: any) {
-    toast.error('Failed to scrape data')
+    console.log('[Scrape] Fatal error:', error.message)
     return NextResponse.json(
       {
         error: 'Failed to scrape data',

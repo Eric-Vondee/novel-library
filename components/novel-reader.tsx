@@ -13,7 +13,6 @@ import { ErrorBoundary } from './error-boundary'
 import { BookLoadError } from '@/lib/epub-helper'
 import { AlertCircle } from 'lucide-react'
 import { Button } from './ui/button'
-import { PrismaClient } from '@prisma/client'
 
 function ErrorFallback({ error, reset }: { error: Error; reset: () => void }) {
   return (
@@ -37,6 +36,7 @@ function ErrorFallback({ error, reset }: { error: Error; reset: () => void }) {
 export default function NovelReader() {
   const { filename } = useParams()
   const filenameString = Array.isArray(filename) ? filename[0] : filename
+  const decodedTitle = filenameString ? decodeURIComponent(filenameString) : ''
   const { theme } = useTheme()
   const [epubUrl, setEpubUrl] = useState<string>('')
   const [isLoadingUrl, setIsLoadingUrl] = useState(true)
@@ -44,30 +44,25 @@ export default function NovelReader() {
   useEffect(() => {
     async function fetchEpubUrl() {
       try {
-        const prisma = new PrismaClient()
-        const novel = await prisma.novel.findFirst({
-          where: {
-            filename: {
-              contains: filenameString,
-            },
-          },
-        })
-        await prisma.$disconnect()
-
-        if (novel?.filename) {
-          setEpubUrl(novel.filename)
-        } else {
-          throw new Error('Novel not found')
+        const response = await fetch(`/api/novels/${encodeURIComponent(decodedTitle)}`)
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Novel not found')
         }
+        const novel = await response.json()
+        setEpubUrl(novel.filename)
       } catch (error) {
         console.error('Error fetching novel URL:', error)
+        setEpubUrl('') // Clear the URL to trigger the error UI
       } finally {
         setIsLoadingUrl(false)
       }
     }
 
-    fetchEpubUrl()
-  }, [filenameString])
+    if (decodedTitle) {
+      fetchEpubUrl()
+    }
+  }, [decodedTitle])
 
   const {
     location,
@@ -86,7 +81,7 @@ export default function NovelReader() {
     handleFontSizeChange,
     setRendition,
     customRendition,
-  } = useNovelReader(filenameString)
+  } = useNovelReader(decodedTitle)
 
   const getTextContent = () => {
     if (!customRendition) return ''

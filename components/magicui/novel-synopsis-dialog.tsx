@@ -30,6 +30,7 @@ export function NovelSynopsisDialog({
   image,
   trigger,
 }: NovelSynopsisDialogProps) {
+  const readerPath = `/reader/${encodeURIComponent(title)}`
   return (
     <Dialog>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -73,10 +74,10 @@ export function NovelSynopsisDialog({
 
         <DialogFooter className='mt-6 flex-col space-y-2 sm:flex-row sm:space-x-2 sm:space-y-0'>
           <Button asChild variant='default' className='w-full sm:w-auto'>
-            <Link href={`/reader/${filename}`}>Start Reading</Link>
+            <Link href={readerPath}>Start Reading</Link>
           </Button>
           <Button asChild variant='outline' className='w-full sm:w-auto'>
-            <a href={`/novels/${filename}`} download>
+            <a href={filename} download>
               <Download className='h-4 w-4 mr-2' />
               Download
             </a>

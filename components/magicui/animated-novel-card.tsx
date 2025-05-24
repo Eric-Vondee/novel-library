@@ -61,6 +61,9 @@ export function AnimatedNovelCard({ novel, index }: AnimatedNovelCardProps) {
   const truncatedSynopsis =
     novel.synopsis[0].slice(0, 100) + (novel.synopsis[0].length > 100 ? '...' : '')
 
+  // Create a URL-friendly version of the title
+  const readerPath = `/reader/${encodeURIComponent(novel.title)}`
+
   return (
     <AnimatedCard index={index}>
       <div className='flex gap-5'>
@@ -123,10 +126,10 @@ export function AnimatedNovelCard({ novel, index }: AnimatedNovelCardProps) {
           <AnimatedContent delay={0.7}>
             <div className='flex gap-2 pt-1'>
               <Button asChild variant='default' size='sm' className='flex-1'>
-                <Link href={`/reader/${novel.filename}`}>Read</Link>
+                <Link href={readerPath}>Read</Link>
               </Button>
               <Button asChild variant='outline' size='sm' className='flex-1'>
-                <a href={`/novels/${novel.filename}`} download>
+                <a href={novel.filename} download>
                   <Download className='h-3 w-3 mr-1' />
                   Download
                 </a>
