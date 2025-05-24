@@ -2,7 +2,6 @@
 
 import { useParams } from 'next/navigation'
 import { ReactReader } from 'react-reader'
-import Layout from '@/layout/layout'
 import { useTheme } from 'next-themes'
 import { Loading } from './novel-reader-components/loader'
 import ControlPanel from '@/components/novel-reader-components/control-panel'

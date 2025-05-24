@@ -54,7 +54,7 @@ export async function POST(request: Request) {
     // Create a unique filename
     const filename = `${novelData.title
       .split(/[^a-z0-9]+/gi)
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join('-')}.epub`
 
     // Create the novel in the database
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
         const imageExt = novelData.image.split('.').pop() || 'jpg'
         const imageFilename = `${novelData.title
           .split(/[^a-z0-9]+/gi)
-          .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+          .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
           .join('-')}.${imageExt}`
         const imagePath = join(imagesDir, imageFilename)
         await writeFile(imagePath, imageBuffer)
