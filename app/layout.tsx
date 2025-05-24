@@ -4,6 +4,7 @@ import './globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import Header from '@/layout/header'
 import Footer from '@/layout/footer'
+import { Toaster } from 'sonner'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -50,6 +51,7 @@ export default function RootLayout({
             <main className='flex-grow '>{children}</main>
             <Footer />
           </div>
+          <Toaster richColors position='top-right' />
         </ThemeProvider>
       </body>
     </html>

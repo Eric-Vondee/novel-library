@@ -67,7 +67,7 @@ export const novels = [
     title: "I'm Really Not The Demon God's Lackey",
     author: 'Great Calamity Of Fire',
     filename: 'IRNTDGL.epub',
-    image: '/novels/images/I’m-Really-Not-The-Demon-God’s-Lackey.webp',
+    image: "/novels/images/I'm-Really-Not-The-Demon-God's-Lackey.webp",
     description: 'No description available.',
     status: 'Completed',
     chapters: 500,

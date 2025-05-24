@@ -3,6 +3,7 @@ import { writeFile, mkdir, unlink } from 'node:fs/promises'
 import { join } from 'node:path'
 import { promises as fs } from 'node:fs'
 import { PrismaClient } from '@prisma/client'
+import { toast } from 'sonner'
 
 interface NovelData {
   title: string
@@ -25,6 +26,7 @@ export async function POST(request: Request) {
     const novelData = JSON.parse(formData.get('novelData') as string)
 
     if (!file) {
+      toast.error('No file uploaded')
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 })
     }
 
@@ -112,6 +114,7 @@ export async function POST(request: Request) {
     })
   } catch (error) {
     console.error('Upload error:', error)
+    toast.error('Failed to upload novel')
     return NextResponse.json(
       {
         error: 'Failed to upload novel',

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import puppeteer, { type Browser } from 'puppeteer'
 import * as cheerio from 'cheerio'
+import { toast } from 'sonner'
 
 interface ScrapedData {
   title: string
@@ -20,6 +21,7 @@ export async function POST(request: Request) {
     console.log('Received scrape request for URL:', url)
 
     if (!url) {
+      toast.error('URL is required')
       return NextResponse.json({ error: 'URL is required' }, { status: 400 })
     }
 
@@ -129,9 +131,11 @@ export async function POST(request: Request) {
           source: 'Webnovel',
         }
       } else {
+        toast.error('Unsupported website')
         return NextResponse.json({ error: 'Unsupported website' }, { status: 400 })
       }
 
+      toast.success('Successfully scraped novel data')
       return NextResponse.json(scrapedData)
     } catch (error: any) {
       console.error('Scraping error:', {
@@ -140,6 +144,7 @@ export async function POST(request: Request) {
       })
 
       if (error.message.includes('net::ERR_ACCESS_DENIED') || error.message.includes('403')) {
+        toast.error('Access denied by the website')
         return NextResponse.json(
           {
             error: 'Access denied by the website. The website may be blocking automated requests.',
@@ -149,6 +154,7 @@ export async function POST(request: Request) {
         )
       }
 
+      toast.error('Failed to scrape data')
       return NextResponse.json(
         {
           error: 'Failed to scrape data',
@@ -164,6 +170,7 @@ export async function POST(request: Request) {
     }
   } catch (error: any) {
     console.error('General error:', error)
+    toast.error('Failed to scrape data')
     return NextResponse.json(
       {
         error: 'Failed to scrape data',
