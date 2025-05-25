@@ -68,14 +68,6 @@ export async function POST(request: Request) {
       throw new Error('Navigation timeout - the page took too long to load')
     }
 
-    try {
-      await page.waitForSelector('.seriestitlenu, .book-info h1', {
-        timeout: 3000,
-      })
-    } catch (error: any) {
-      throw new Error('Could not find novel title - page structure might have changed')
-    }
-
     const content = await page.content()
     const $ = cheerio.load(content)
 
@@ -92,10 +84,6 @@ export async function POST(request: Request) {
 
     if (cleanUrl.includes('novelupdates')) {
       const title = $('.seriestitlenu').text().trim()
-      if (!title) {
-        throw new Error('Could not find novel title')
-      }
-
       const author = $('#authtag')
         .text()
         .trim()
