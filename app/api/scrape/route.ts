@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
-import chromium from 'chrome-aws-lambda'
-import puppeteer from 'puppeteer-core'
+import chromium from '@sparticuz/chromium'
+import puppeteer, { type Browser } from 'puppeteer-core'
 import * as cheerio from 'cheerio'
 
 interface ScrapedData {
@@ -15,7 +15,7 @@ interface ScrapedData {
 }
 
 export async function POST(request: Request) {
-  let browser: puppeteer.Browser | null = null
+  let browser: Browser | null = null
   try {
     const { url } = await request.json()
     if (!url) {
@@ -25,10 +25,12 @@ export async function POST(request: Request) {
     // Remove any comment page or other parameters from the URL
     const cleanUrl = url.split('/comment-page-')[0].split('?')[0]
 
+    // Launch browser with @sparticuz/chromium
+    const executablePath = await chromium.executablePath()
     browser = await puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath,
+      executablePath,
       headless: chromium.headless,
     })
 
@@ -38,9 +40,12 @@ export async function POST(request: Request) {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     )
 
-    page.on('requestfailed', (request) => {
-      console.log('[Scrape] Failed request:', request.url(), request.failure()?.errorText)
-    })
+    page.on(
+      'requestfailed',
+      (request: { url: () => string; failure: () => { errorText: string } | null }) => {
+        console.log('[Scrape] Failed request:', request.url(), request.failure()?.errorText)
+      },
+    )
 
     try {
       await page.goto(cleanUrl, {
