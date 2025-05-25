@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import chromium from '@sparticuz/chromium'
-import puppeteer, { type Browser } from 'puppeteer-core'
+import puppeteer, { type Browser } from 'puppeteer'
 import * as cheerio from 'cheerio'
 
 interface ScrapedData {
@@ -27,11 +26,9 @@ export async function POST(request: Request) {
     // Remove any comment page or other parameters from the URL
     const cleanUrl = url.split('/comment-page-')[0].split('?')[0]
 
-    // Launch browser with @sparticuz/chromium
-    const executablePath = await chromium.executablePath()
+    // Launch browser with full puppeteer
     browser = await puppeteer.launch({
       args: [
-        ...chromium.args,
         '--disable-gpu',
         '--no-sandbox',
         '--disable-setuid-sandbox',
@@ -42,9 +39,7 @@ export async function POST(request: Request) {
         '--single-process',
         '--disable-extensions',
       ],
-      defaultViewport: chromium.defaultViewport,
-      executablePath,
-      headless: chromium.headless,
+      headless: true,
     })
 
     const page = await browser.newPage()
