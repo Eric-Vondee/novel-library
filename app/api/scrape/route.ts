@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import puppeteer, { type Browser } from 'puppeteer'
 import puppeteerCore, { type Browser as BrowserCore } from 'puppeteer-core'
-import chromium from '@sparticuz/chromium-min'
+import chromium from '@sparticuz/chromium'
 import * as cheerio from 'cheerio'
 
 interface ScrapedData {
@@ -29,15 +29,16 @@ export async function POST(request: Request) {
 
     try {
       if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
-        // Use puppeteer-core with @sparticuz/chromium-min in production
-        const executablePath = await chromium.executablePath(
-          'https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar',
-        )
+        // Use puppeteer-core with @sparticuz/chromium in production
+        const executablePath = await chromium.executablePath()
         browser = await puppeteerCore.launch({
           executablePath,
           args: chromium.args,
-          headless: chromium.headless,
-          defaultViewport: chromium.defaultViewport,
+          headless: true,
+          defaultViewport: {
+            width: 1280,
+            height: 800
+          }
         })
       } else {
         // Use regular puppeteer in development
