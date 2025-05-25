@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server'
-import puppeteer, { type Browser } from 'puppeteer'
-import puppeteerCore, { type Browser as BrowserCore } from 'puppeteer-core'
-import chromium from '@sparticuz/chromium'
+import { chromium } from 'playwright-core'
 import * as cheerio from 'cheerio'
 
 interface ScrapedData {
@@ -16,7 +14,7 @@ interface ScrapedData {
 }
 
 export async function POST(request: Request) {
-  let browser: Browser | BrowserCore | undefined
+  let browser: any
   try {
     const { url } = await request.json()
 
@@ -28,51 +26,30 @@ export async function POST(request: Request) {
     const cleanUrl = url.split('/comment-page-')[0].split('?')[0]
 
     try {
-      if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
-        // Use puppeteer-core with @sparticuz/chromium in production
-        const executablePath = await chromium.executablePath()
-        browser = await puppeteerCore.launch({
-          executablePath,
-          args: chromium.args,
-          headless: true,
-          defaultViewport: {
-            width: 1280,
-            height: 800
-          }
-        })
-      } else {
-        // Use regular puppeteer in development
-        browser = await puppeteer.launch({
-          headless: true,
-          args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--disable-gpu',
-            '--window-size=1920x1080',
-          ],
-        })
-      }
+      // Launch browser with Playwright
+      browser = await chromium.launch({
+        headless: true,
+      })
 
-      const page = await browser.newPage()
+      const context = await browser.newContext({
+        userAgent:
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        viewport: { width: 1280, height: 800 },
+      })
 
-      // Set a realistic viewport
-      await page.setViewport({ width: 1280, height: 800 })
-
-      // Set user agent
-      await page.setUserAgent(
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      )
+      const page = await context.newPage()
 
       // Add request interception to log failed requests
-      page.on('requestfailed', (request) => {
-        console.log('[Scrape] Failed request:', request.url(), request.failure()?.errorText)
-      })
+      page.on(
+        'requestfailed',
+        (request: { url: () => string; failure: () => { errorText: string } | null }) => {
+          console.log('[Scrape] Failed request:', request.url(), request.failure()?.errorText)
+        },
+      )
 
       try {
         await page.goto(cleanUrl, {
-          waitUntil: 'networkidle0',
+          waitUntil: 'networkidle',
           timeout: 60000, // Increased timeout to 60 seconds
         })
       } catch (error: any) {
