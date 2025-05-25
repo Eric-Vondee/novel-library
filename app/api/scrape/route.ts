@@ -14,6 +14,8 @@ interface ScrapedData {
   source: string
 }
 
+export const maxDuration = 10 // Set max duration to 10 seconds
+
 export async function POST(request: Request) {
   let browser: Browser | null = null
   try {
@@ -28,7 +30,7 @@ export async function POST(request: Request) {
     // Launch browser with @sparticuz/chromium
     const executablePath = await chromium.executablePath()
     browser = await puppeteer.launch({
-      args: chromium.args,
+      args: [...chromium.args, '--disable-gpu', '--no-sandbox', '--disable-setuid-sandbox'],
       defaultViewport: chromium.defaultViewport,
       executablePath,
       headless: chromium.headless,
@@ -40,26 +42,23 @@ export async function POST(request: Request) {
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     )
 
-    page.on(
-      'requestfailed',
-      (request: { url: () => string; failure: () => { errorText: string } | null }) => {
-        console.log('[Scrape] Failed request:', request.url(), request.failure()?.errorText)
-      },
-    )
+    // Set shorter timeouts
+    page.setDefaultNavigationTimeout(15000)
+    page.setDefaultTimeout(15000)
 
     try {
       await page.goto(cleanUrl, {
-        waitUntil: 'networkidle0',
-        timeout: 60000,
+        waitUntil: 'domcontentloaded', // Changed from networkidle0 to domcontentloaded
+        timeout: 15000,
       })
     } catch (error: any) {
       console.log('[Scrape] Navigation error:', error.message)
-      throw error
+      throw new Error('Navigation timeout - the page took too long to load')
     }
 
     try {
       await page.waitForSelector('.seriestitlenu, .book-info h1', {
-        timeout: 10000,
+        timeout: 5000,
       })
     } catch (error: any) {
       console.log('[Scrape] Selector timeout:', error.message)
@@ -93,7 +92,6 @@ export async function POST(request: Request) {
       const statusText = $('#editstatus').text().trim()
       const status = statusText.includes('Completed') ? 'Completed' : 'Ongoing'
 
-      // Extract chapter count from status text (e.g., "1260 Chapters (Completed)" or "786 Chapters (Ongoing)")
       const chapterMatch = statusText.match(/(\d+)\s+Chapters/)
       const chapters = chapterMatch ? Number.parseInt(chapterMatch[1]) : 0
 
@@ -101,7 +99,6 @@ export async function POST(request: Request) {
       const image = $('.seriesimg img').attr('src') || ''
 
       if (!title) {
-        console.log('[Scrape] Error: Could not find title on NovelUpdates page')
         throw new Error(
           'Could not find novel title. The page structure might have changed or the URL might be incorrect.',
         )
@@ -114,7 +111,7 @@ export async function POST(request: Request) {
         chapters,
         description,
         image,
-        synopsis: [description], // Use the same text as description
+        synopsis: [description],
         source: 'NovelUpdates',
       }
     } else if (cleanUrl.includes('webnovel')) {
@@ -127,7 +124,6 @@ export async function POST(request: Request) {
       const image = $('.book-cover img').attr('src') || ''
 
       if (!title) {
-        console.log('[Scrape] Error: Could not find title on Webnovel page')
         throw new Error(
           'Could not find novel title. The page structure might have changed or the URL might be incorrect.',
         )
@@ -144,11 +140,9 @@ export async function POST(request: Request) {
         source: 'Webnovel',
       }
     } else {
-      console.log('[Scrape] Error: Unsupported website:', cleanUrl)
       return NextResponse.json({ error: 'Unsupported website' }, { status: 400 })
     }
 
-    console.log('[Scrape] Successfully scraped data for:', scrapedData.title)
     await browser.close()
     return NextResponse.json(scrapedData)
   } catch (error: any) {
